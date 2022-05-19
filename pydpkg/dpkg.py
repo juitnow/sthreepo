@@ -14,6 +14,7 @@ from gzip import GzipFile
 # pypi imports
 import six
 from arpy import Archive
+from pyzstd import ZstdFile
 
 # local imports
 from pydpkg.exceptions import (
@@ -255,6 +256,9 @@ class Dpkg(_Dbase):
         elif b"control.tar.xz" in dpkg_archive.archived_files:
             control_archive = dpkg_archive.archived_files[b"control.tar.xz"]
             control_archive_type = "xz"
+        elif b"control.tar.zst" in dpkg_archive.archived_files:
+            control_archive = dpkg_archive.archived_files[b"control.tar.zst"]
+            control_archive_type = "zstd"
         else:
             raise DpkgMissingControlGzipFile(
                 "Corrupt dpkg file: no control.tar.gz/xz file in ar archive."
@@ -265,6 +269,12 @@ class Dpkg(_Dbase):
             with GzipFile(fileobj=control_archive) as gzf:
                 self._log.debug("opened gzip control archive: %s", gzf)
                 with tarfile.open(fileobj=io.BytesIO(gzf.read())) as ctar:
+                    self._log.debug("opened tar file: %s", ctar)
+                    message = self._extract_message(ctar)
+        elif control_archive_type == "zstd":
+            with ZstdFile(control_archive) as zstd:
+                self._log.debug("opened gzip control archive: %s", zstd)
+                with tarfile.open(fileobj=io.BytesIO(zstd.read())) as ctar:
                     self._log.debug("opened tar file: %s", ctar)
                     message = self._extract_message(ctar)
         else:
