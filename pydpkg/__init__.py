@@ -3,7 +3,5 @@
 """
 
 from pydpkg import dpkg
-from pydpkg import dsc
 
 Dpkg = dpkg.Dpkg
-Dsc = dsc.Dsc
