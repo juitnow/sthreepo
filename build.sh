@@ -41,10 +41,12 @@ install --mode=644 NOTICE.md "./dist/deb/usr/share/doc/python3-sthreepo/NOTICE.m
 install --mode=644 LICENSE.md "./dist/deb/usr/share/doc/python3-sthreepo/LICENSE.md"
 
 cat >> "./dist/deb/etc/default/sthreepo" <<-EOF
-	# STHREEPO_BUCKET the bucket name where the repository is stored
+	# The bucket name where the repository is stored
 	#STHREEPO_BUCKET=my-repo-bucket
-	# STHREEPO_KEY the ID, ARN or alias of the KMS key used to sign the repository
+	# The ID, ARN or alias of the KMS key used to sign the repository
 	#STHREEPO_KEY=alias/MyPgpKey
+	# The CloudFront Distribution whose cache will be invalidated
+	#STHREEPO_CLOUDFRONT_ID=EXXXXXXXXXXXXX
 	EOF
 
 cat >> "./dist/deb/DEBIAN/control" <<-EOF
