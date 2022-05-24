@@ -27,12 +27,10 @@ def prettify(bucket, prefix='repository/', s3_client=None):
   dates = {}
   prefixes = []
 
+  params = { 'Bucket': bucket, 'Delimiter': '/', 'Prefix': prefix }
+
   while True:
-    response = s3_client.list_objects(
-      Bucket = bucket,
-      Delimiter = '/',
-      Prefix = prefix,
-    )
+    response = s3_client.list_objects_v2(**params)
 
     for content in response.get('Contents', []):
       file = content['Key'][len(prefix):]
@@ -47,7 +45,9 @@ def prettify(bucket, prefix='repository/', s3_client=None):
       if common_prefix['Prefix'] not in prefixes:
         prefixes.append(common_prefix['Prefix'])
 
-    if not response['Marker']:
+    if response['IsTruncated']:
+      params['ContinuationToken'] = response['NextContinuationToken']
+    else:
       break
 
   buffer = StringIO()
