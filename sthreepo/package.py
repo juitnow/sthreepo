@@ -1,5 +1,5 @@
 from io import StringIO
-from pydpkg import Dpkg
+from .pydpkg import Dpkg
 
 import re
 from logging import getLogger

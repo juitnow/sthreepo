@@ -1,4 +1,18 @@
-""" pydpkg.dpkg.Dpkg: a class to represent dpkg files """
+# pydpkg-1.6.0
+# ============
+#
+# This is a fork of [pydpkg](https://github.com/memory/python-dpkg) version 1.6.0
+# with its `Dsc` module removed and support for `zstd` archives.
+#
+# We need this as `pydpkg.Dsc` imports `PGPy` which has some native dependencies
+# we don't want to actually have (the idea here is to target a small AWS Lambda
+# function).
+#
+# Anyhow, for signatures, we use our own `pgpkms` module!
+#
+# With regards to `zstd`, Ubuntu Focal and Jammy started using this new format,
+# so if we want to directly import packages from those distributions, we need
+# to support it!
 
 # stdlib imports
 import hashlib
@@ -16,22 +30,10 @@ import six
 from arpy import Archive
 from pyzstd import ZstdFile
 
-# local imports
-from pydpkg.exceptions import (
-    DpkgError,
-    DpkgVersionError,
-    DpkgMissingControlFile,
-    DpkgMissingControlGzipFile,
-    DpkgMissingRequiredHeaderError,
-)
-from pydpkg.base import _Dbase
-
 REQUIRED_HEADERS = ("package", "version", "architecture")
 
-
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
-class Dpkg(_Dbase):
-
+class Dpkg:
     """Class allowing import and manipulation of a debian package file."""
 
     def __init__(self, filename=None, ignore_missing=False, logger=None):
@@ -75,6 +77,22 @@ class Dpkg(_Dbase):
         if attr in self.message:
             return self.message[attr]
         raise AttributeError(f"'Dpkg' object has no attribute '{attr}'")
+
+    def __getitem__(self, item):
+        """Overload getitem to treat the message plus our local
+        properties as items.
+
+        :param item: string
+        :returns: string
+        :raises: KeyError
+        """
+        try:
+            return getattr(self, item)
+        except AttributeError:
+            try:
+                return self.__getattr__(item)
+            except AttributeError as ex:
+                raise KeyError(item) from ex
 
     @property
     def message(self):
@@ -529,3 +547,24 @@ class Dpkg(_Dbase):
         function to a function suitable to passing to sorted() and friends
         as a key."""
         return cmp_to_key(Dpkg.dstringcmp)(x)
+
+# ==============================================================================
+
+class DpkgError(Exception):
+    """Base error class for Dpkg errors"""
+
+
+class DpkgVersionError(DpkgError):
+    """Corrupt or unparseable version string"""
+
+
+class DpkgMissingControlFile(DpkgError):
+    """No control file found in control.tar.gz/xz"""
+
+
+class DpkgMissingControlGzipFile(DpkgError):
+    """No control.tar.gz/xz file found in dpkg file"""
+
+
+class DpkgMissingRequiredHeaderError(DpkgError):
+    """Corrupt package missing a required header"""

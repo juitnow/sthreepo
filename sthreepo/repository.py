@@ -1,10 +1,10 @@
 from .package import Package
 from .packages import Packages
+from .pydpkg import Dpkg
 
 from functools import cmp_to_key
 from io import StringIO
 from logging import getLogger
-from pydpkg import Dpkg
 
 import re
 
