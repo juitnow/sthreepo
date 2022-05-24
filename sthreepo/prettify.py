@@ -13,7 +13,6 @@ __ICON = 'data:image/svg+xml;base64,' \
   'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAg' \
   'MTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj4mI3gxRjVDNDs8L3RleHQ+PC9zdmc+'
 
-
 def prettify(bucket, prefix='repository/', s3_client=None):
   prefix = prefix if prefix.endswith('/') else prefix + '/'
 
@@ -73,11 +72,6 @@ def prettify(bucket, prefix='repository/', s3_client=None):
 
   date = datetime.now(tz=zoneinfo.ZoneInfo('UTC')).strftime('%a, %d %b %Y %H:%M:%S %Z')
 
-  # file cabinet
-  # Unicode: U+1F5C4, UTF-8: F0 9F 97 84
-
-  # <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
-
   content = dedent('''
     <!DOCTYPE html>
     <html>
@@ -118,7 +112,7 @@ def prettify(bucket, prefix='repository/', s3_client=None):
     Bucket = bucket,
     Key = key,
     Body = body,
-    ContentType = 'text/html; charset=utf-8'
+    ContentType = 'text/html; charset=utf-8',
   )
 
   for sub_prefix in prefixes:
