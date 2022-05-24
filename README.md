@@ -1,9 +1,9 @@
 A simple Debian repository using S3
 ===================================
 
-`sthreepo` (read _ess-three-p-oh_) is an extremely simple (and far for complete)
-Debian repository manager using [AWS S3](https://aws.amazon.com/s3/) for storage
-and [AWS KMS](https://aws.amazon.com/kms/) for signature keys.
+`sthreepo` (read _ess-three-p-oh_) is an extremely simple (and far _FAR_ from
+complete) Debian repository manager using [AWS S3](https://aws.amazon.com/s3/)
+for storage and [AWS KMS](https://aws.amazon.com/kms/) for signature keys.
 
 * [Signature Keys](#signature-keys)
 * [Copyright Notice](NOTICE.md)
