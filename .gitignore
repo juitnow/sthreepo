@@ -1,2 +1,6 @@
+.env
+build/
+dist/
+sthreepo.egg-info/
 __pycache__/
 *.deb
