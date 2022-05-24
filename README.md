@@ -64,11 +64,9 @@ Options:
   -l, --label=<label>   Set the label for the repository.
   -n, --name=<name>     The name of the repository (default: "repository").
   -o, --origin=<origin> Set the origin for the repository.
-  --sha[256|384|512]    Use the specified hashing algorithm.
   -v, --verbose         Be more verbose.
 
 Environment Variables:
   STHREEPO_BUCKET       The AWS bucket name of the repository.
   STHREEPO_KEY          The default ID, ARN or alias of the KMS key to use.
-  STHREEPO_HASH         The signing algorithm to use (defaults to "sha256").
 ```
