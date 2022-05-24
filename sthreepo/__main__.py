@@ -61,13 +61,12 @@ def __help():
 # ==============================================================================
 
 if __name__ == '__main__':
-  key = os.environ.get('STHREEPO_KEY')
+  key_id = os.environ.get('STHREEPO_KEY')
   bucket = os.environ.get('STHREEPO_BUCKET')
   invalidate = os.environ.get('STHREEPO_CLOUDFRONT_ID')
   name = 'repository'
   label = None
   origin = None
-  key_id = None
   create_index = []
   default_index = None
   package_index = []
