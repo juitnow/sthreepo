@@ -6,6 +6,10 @@ complete) Debian repository manager using [AWS S3](https://aws.amazon.com/s3/)
 for storage and [AWS KMS](https://aws.amazon.com/kms/) for signature keys.
 
 * [Signature Keys](#signature-keys)
+* [Creating a Repository](#creating-a-repository)
+* [Adding Packages](#adding-packages)
+* [HTTPS and Authentication](#https-and-authentication)
+* [Further Help](#further-help)
 * [Copyright Notice](NOTICE.md)
 * [License](LICENSE.md)
 
@@ -42,15 +46,27 @@ should be as easy as calling:
 $ python3 -m sthreepo -b=my-repo-bucket ./my-package.deb
 ```
 
+
+HTTPS and Authentication
+------------------------
+
+As with any S3-based website, HTTPs and authentication support can be added
+using CloudFront.
+
+The [terraform/](https://github.com/juitnow/sthreepo/tree/main/terraform)
+directory contains a basic [Terraform](https://www.terraform.io/) setup to
+create such an environment.
+
+
 Further Help
 ------------
 
 Look at the command line help for more information:
 
 ```bash
-$ python3 -m sthreepo -h
+$ ./bin/sthreepo -h
 
-Usage: python3 -m sthreepo [options] <package.deb>
+Usage: ./bin/sthreepo [options] <package.deb>
 
 Options:
   -b, --bucket=<name>   The AWS bucket name of the repository.
@@ -65,8 +81,12 @@ Options:
   -n, --name=<name>     The name of the repository (default: "repository").
   -o, --origin=<origin> Set the origin for the repository.
   -v, --verbose         Be more verbose.
+      --invalidate-cloudfront=<distribution-id>
+                        Invalidate all CloudFront caches for the distribution
+                        with the specified ID.
 
 Environment Variables:
-  STHREEPO_BUCKET       The AWS bucket name of the repository.
-  STHREEPO_KEY          The default ID, ARN or alias of the KMS key to use.
+  STHREEPO_BUCKET         The AWS bucket name of the repository.
+  STHREEPO_KEY            The default ID, ARN or alias of the KMS key to use.
+  STHREEPO_CLOUDFRONT_ID  The CloudFront Distribution ID for invalidating caches.
 ```
