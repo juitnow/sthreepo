@@ -13,7 +13,7 @@ __ICON = 'data:image/svg+xml;base64,' \
   'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAg' \
   'MTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj4mI3gxRjVDNDs8L3RleHQ+PC9zdmc+'
 
-def prettify(bucket, prefix='repository/', s3_client=None):
+def prettify(bucket, prefix='repository/', s3_client=None, parent=False):
   prefix = prefix if prefix.endswith('/') else prefix + '/'
 
   log.debug('Generating index for "%s"' % (prefix))
@@ -51,7 +51,8 @@ def prettify(bucket, prefix='repository/', s3_client=None):
       break
 
   buffer = StringIO()
-  buffer.write('&#x1F519; <a href="../">../</a>\n')
+  if parent:
+    buffer.write('&#x1F519; <a href="../">../</a>\n')
 
   for sub_prefix in prefixes:
     buffer.write('&#x1F4C2; <a href="./{0}">{0}</a>\n'.format(
@@ -63,7 +64,7 @@ def prettify(bucket, prefix='repository/', s3_client=None):
     buffer.write('{0} <a href="./{1}">{1}</a> {2} {3} bytes\n'.format(
       icon,
       file,
-      dates[file].strftime('%d-%b-%Y %H:%M:%S').rjust(60 - len(file)),
+      dates[file].strftime('%d-%b-%Y %H:%M:%S').rjust(70 - len(file)),
       '{:,}'.format(sizes[file]).rjust(20),
     ))
 
@@ -116,4 +117,4 @@ def prettify(bucket, prefix='repository/', s3_client=None):
   )
 
   for sub_prefix in prefixes:
-    prettify(bucket, prefix=sub_prefix, s3_client=s3_client)
+    prettify(bucket, prefix=sub_prefix, s3_client=s3_client, parent=True)
