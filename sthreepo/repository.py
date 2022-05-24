@@ -23,7 +23,7 @@ class Repository(dict):
     # Reconstruct packages
     if 'packages' in data:
       for key, package in data['packages'].items():
-        self.add_package(Package(data=package))
+        self.add_package(Package(data=package), verbose=False)
 
     # Reconstruct indexes
     if 'indexes' in data:
@@ -34,7 +34,7 @@ class Repository(dict):
 
           # Add all packages to the index
           for package_key in package_keys:
-            self.add_package(self.__packages[package_key], index)
+            self.add_package(self.__packages[package_key], index, verbose=False)
 
     # Architectures are automatically regenerated, so add label and origin,
     # defaulting them to the value specified in the constructor parameters
@@ -78,7 +78,7 @@ class Repository(dict):
       self.__architectures.append(architecture)
 
 
-  def add_package(self, package, index=None):
+  def add_package(self, package, index=None, verbose=True):
     assert isinstance(package, Package), 'Invalid Package (must be <class Package>)'
 
     key = package.key
@@ -86,7 +86,7 @@ class Repository(dict):
     if key in self.__packages:
       assert self.__packages[key].sha256 == package.sha256, 'Package "%s" already added with different hash' % (key)
     else:
-      log.debug('Adding package "%s" to repository' % (key))
+      if verbose: log.info('Adding package "%s" to repository' % (key))
       self.__packages[key] = package
       self.add_architecture(package.architecture)
 
@@ -98,7 +98,7 @@ class Repository(dict):
     assert component in self.__indexes[distribution], 'Unknown component "%s" for distribution "%s"' % (component, distribution)
 
     if not key in self.__indexes[distribution][component]:
-      log.info('Adding package "%s" to index "%s:%s"' % (key, distribution, component))
+      if verbose: log.info('Adding package "%s" to index "%s:%s"' % (key, distribution, component))
       self.__indexes[distribution][component].append(key)
 
   #=============================================================================
