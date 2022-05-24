@@ -26,11 +26,13 @@ def process(repository, key_id, bucket,
 
   # Default KMS client if none specified
   if not kms_client:
+    log.debug('Creating KMS client')
     if not session: session = aws.get_session()
     kms_client = session.create_client('kms')
 
   # Default S3 client if none specified
   if not s3_client:
+    log.debug('Creating S3 client')
     if not session: session = aws.get_session()
     s3_client = session.create_client('s3')
 
@@ -39,8 +41,8 @@ def process(repository, key_id, bucket,
 
   # Prepare the _base_ files (repository keys)
   files = {
-    'repository.gpg': (key.to_pgp(armoured=False), 'application/binary'),
-    'repository.gpg.asc': (key.to_pgp(armoured=True), 'text/plain; charset=utf-8'),
+    'repository.gpg': (key.to_pgp(armoured=False, kms_client=kms_client), 'application/binary'),
+    'repository.gpg.asc': (key.to_pgp(armoured=True, kms_client=kms_client), 'text/plain; charset=utf-8'),
   }
 
   # Process every distribution in the repository
@@ -49,7 +51,7 @@ def process(repository, key_id, bucket,
 
     # Process every component in the distribution
     for component in components:
-      log.info('Generating repository files for "%s:%s" (%s)' % (distribution, component, ' '.join(repository.architectures)))
+      log.info('Generating repository files for "%s:%s"' % (distribution, component))
 
       # Process every architecture in the repository
       for architecture in repository.architectures:
@@ -77,59 +79,73 @@ def process(repository, key_id, bucket,
         distribution_files[f'{component}/binary-{architecture}/Release'] = (release, 'text/plain; charset=utf-8')
 
     # We can now prepare the "Release" file for the component
-    buffer = StringIO()
+    if distribution_files:
+      buffer = StringIO()
 
-    # Generic headers
-    if repository.origin: buffer.write('Origin: %s\n' % (repository.origin))
-    if repository.label: buffer.write('Label: %s\n' % (repository.label))
-    buffer.write('Suite: %s\n' % (distribution))
-    buffer.write('Codename: %s\n' % (distribution))
-    buffer.write('Components: %s\n' % (' '.join(components)))
-    buffer.write('Architectures: %s\n' % (' '.join(repository.architectures)))
-    buffer.write('Date: %s\n' % (datetime.now(tz=zoneinfo.ZoneInfo('UTC')).strftime('%a, %d %b %Y %H:%M:%S %Z')))
-    buffer.write('Acquire-By-Hash: no\n')
+      # Generic headers
+      if repository.origin: buffer.write('Origin: %s\n' % (repository.origin))
+      if repository.label: buffer.write('Label: %s\n' % (repository.label))
+      buffer.write('Suite: %s\n' % (distribution))
+      buffer.write('Codename: %s\n' % (distribution))
+      buffer.write('Components: %s\n' % (' '.join(components)))
+      buffer.write('Architectures: %s\n' % (' '.join(repository.architectures)))
+      buffer.write('Date: %s\n' % (datetime.now(tz=zoneinfo.ZoneInfo('UTC')).strftime('%a, %d %b %Y %H:%M:%S %Z')))
+      buffer.write('Acquire-By-Hash: no\n')
 
-    buffer.write("MD5Sum:\n")
-    for name in sorted(distribution_files):
-      content, content_type = distribution_files[name]
-      digest = md5(content).hexdigest()
-      buffer.write(' %s %16d %s\n' % (digest, len(content), name))
+      buffer.write("MD5Sum:\n")
+      for name in sorted(distribution_files):
+        content, content_type = distribution_files[name]
+        digest = md5(content).hexdigest()
+        buffer.write(' %s %16d %s\n' % (digest, len(content), name))
 
-    buffer.write("SHA1:\n")
-    for name in sorted(distribution_files):
-      content, content_type = distribution_files[name]
-      digest = sha1(content).hexdigest()
-      buffer.write(' %s %16d %s\n' % (digest, len(content), name))
+      buffer.write("SHA1:\n")
+      for name in sorted(distribution_files):
+        content, content_type = distribution_files[name]
+        digest = sha1(content).hexdigest()
+        buffer.write(' %s %16d %s\n' % (digest, len(content), name))
 
-    buffer.write("SHA256:\n")
-    for name in sorted(distribution_files):
-      content, content_type = distribution_files[name]
-      digest = sha256(content).hexdigest()
-      buffer.write(' %s %16d %s\n' % (digest, len(content), name))
+      buffer.write("SHA256:\n")
+      for name in sorted(distribution_files):
+        content, content_type = distribution_files[name]
+        digest = sha256(content).hexdigest()
+        buffer.write(' %s %16d %s\n' % (digest, len(content), name))
 
-    message = buffer.getvalue()
-    buffer.close()
+      release = buffer.getvalue().encode('utf-8')
+      buffer.close()
 
-    release = message.encode('utf-8')
-    release_gpg = key.sign(release, armoured=True, kms_client=kms_client)
-    inrelease = key.message(message, kms_client=kms_client).encode('utf-8')
+      release_gpg = key.sign(release, armoured=True, kms_client=kms_client)
+      inrelease = key.message(release, kms_client=kms_client).encode('utf-8')
 
-    files[f'dists/{distribution}/Release'] = (release, 'text/plain; charset=utf-8')
-    files[f'dists/{distribution}/Release.gpg'] = (release_gpg, 'text/plain; charset=utf-8')
-    files[f'dists/{distribution}/InRelease'] = (inrelease, 'text/plain; charset=utf-8')
+      files[f'dists/{distribution}/Release'] = (release, 'text/plain; charset=utf-8')
+      files[f'dists/{distribution}/Release.gpg'] = (release_gpg, 'text/plain; charset=utf-8')
+      files[f'dists/{distribution}/InRelease'] = (inrelease, 'text/plain; charset=utf-8')
 
-    for name, (content, content_type) in distribution_files.items():
-      files[f'dists/{distribution}/{name}'] = (content, content_type)
+      for name, (content, content_type) in distribution_files.items():
+        files[f'dists/{distribution}/{name}'] = (content, content_type)
+
+    # No distribution file, remove files
+    else:
+      files[f'dists/{distribution}/Release'] = (None, None)
+      files[f'dists/{distribution}/Release.gpg'] = (None, None)
+      files[f'dists/{distribution}/InRelease'] = (None, None)
 
   # Now upload...
   for name, (content, content_type) in files.items():
     key = "%s%s" % (prefix, name)
-    log.info('Uploading "s3://%s/%s"' % (bucket, key))
-    s3_client.put_object(
-      Bucket = bucket,
-      Key = key,
-      ContentType = content_type,
-      Body = content,
-    )
+    if (content):
+      log.info('Uploading "s3://%s/%s"' % (bucket, key))
+      s3_client.put_object(
+        Bucket = bucket,
+        Key = key,
+        ContentType = content_type,
+        Body = content,
+      )
+    else:
+      log.info('Excluding "s3://%s/%s"' % (bucket, key))
+      s3_client.delete_object(
+        Bucket = bucket,
+        Key = key,
+      )
 
+  # Return uploaded files
   return files
