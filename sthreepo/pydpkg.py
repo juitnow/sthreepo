@@ -2,17 +2,13 @@
 # ============
 #
 # This is a copy of [pydpkg](https://github.com/memory/python-dpkg) version
-# 1.6.0 with its `Dsc` module removed and support for `zstd` archives.
+# 1.6.0 with its `Dsc` module removed.
 #
 # We need this as `pydpkg.Dsc` imports `PGPy` which has some native dependencies
 # we don't want to actually have (the idea here is to target a small AWS Lambda
 # function).
 #
 # Anyhow, for signatures, we use our own `pgpkms` module!
-#
-# With regards to `zstd`, Ubuntu Focal and Jammy started using this new format,
-# so if we want to directly import packages from those distributions, we need
-# to support it!
 
 # stdlib imports
 import hashlib
@@ -28,7 +24,6 @@ from gzip import GzipFile
 # pypi imports
 import six
 from arpy import Archive
-from pyzstd import ZstdFile
 
 REQUIRED_HEADERS = ("package", "version", "architecture")
 
@@ -274,12 +269,9 @@ class Dpkg:
         elif b"control.tar.xz" in dpkg_archive.archived_files:
             control_archive = dpkg_archive.archived_files[b"control.tar.xz"]
             control_archive_type = "xz"
-        elif b"control.tar.zst" in dpkg_archive.archived_files:
-            control_archive = dpkg_archive.archived_files[b"control.tar.zst"]
-            control_archive_type = "zstd"
         else:
             raise DpkgMissingControlGzipFile(
-                "Corrupt dpkg file: no control.tar.gz/xz file in ar archive."
+                "Corrupt dpkg file: no control.tar.gz/xz/zst file in ar archive."
             )
         self._log.debug("found controlgz: %s", control_archive)
 
@@ -287,12 +279,6 @@ class Dpkg:
             with GzipFile(fileobj=control_archive) as gzf:
                 self._log.debug("opened gzip control archive: %s", gzf)
                 with tarfile.open(fileobj=io.BytesIO(gzf.read())) as ctar:
-                    self._log.debug("opened tar file: %s", ctar)
-                    message = self._extract_message(ctar)
-        elif control_archive_type == "zstd":
-            with ZstdFile(control_archive) as zstd:
-                self._log.debug("opened gzip control archive: %s", zstd)
-                with tarfile.open(fileobj=io.BytesIO(zstd.read())) as ctar:
                     self._log.debug("opened tar file: %s", ctar)
                     message = self._extract_message(ctar)
         else:
