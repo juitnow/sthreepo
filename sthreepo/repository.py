@@ -50,6 +50,9 @@ class Repository(dict):
       self['default_index'] = data['default_index']
       self.add_index(self.default_index)
 
+    # Log
+    log.debug('Repository instance created (%s packages)' % (len(self.__packages)))
+
 
   def add_index(self, index):
     assert re.match('^[\w-]+:[\w-]+$', index), 'Invalid index name "%s" (must be "distribution:component")' % (index)
@@ -98,27 +101,84 @@ class Repository(dict):
       log.info('Adding package "%s" to index "%s:%s"' % (key, distribution, component))
       self.__indexes[distribution][component].append(key)
 
+  #=============================================================================
 
   @property
   def origin(self):
     return self.get('origin')
 
+  @origin.setter
+  def origin(self, value):
+    if value:
+      self['origin'] = value
+    else:
+      self.pop('origin', None)
+
+  @origin.deleter
+  def origin(self):
+    self.pop('origin', None)
+
+  #=============================================================================
+
   @property
   def label(self):
     return self.get('label')
+
+  @label.setter
+  def label(self, value):
+    if value:
+      self['label'] = value
+    else:
+      self.pop('label', None)
+
+  @label.deleter
+  def label(self):
+    self.pop('label', None)
+
+  #=============================================================================
 
   @property
   def keep_old(self):
     return self.get('keep_old', 1)
 
+  @keep_old.setter
+  def keep_old(self, value):
+    value = int(value)
+    assert value >= 1, 'Invalid "keep_old" value "%s"' % (value)
+    if value > 1:
+      self['keep_old'] = value
+    else:
+      self.pop('keep_old', None)
+
+  @keep_old.deleter
+  def keep_old(self):
+    self.pop('keep_old', None)
+
+  #=============================================================================
+
   @property
   def default_index(self):
     return self.get('default_index')
+
+  @default_index.setter
+  def default_index(self, value):
+    if value:
+      self.add_index(value)
+      self['default_index'] = value
+    else:
+      self.pop('default_index', None)
+
+  @default_index.deleter
+  def default_index(self):
+    self.pop('default_index', None)
+
+  #=============================================================================
 
   @property
   def architectures(self):
     return self.__architectures.copy()
 
+  #=============================================================================
 
   @property
   def indexes(self):
@@ -128,6 +188,8 @@ class Repository(dict):
       components = sorted(self.__indexes[distribution])
       indexes.append((distribution, components))
     return indexes
+
+  #=============================================================================
 
   def get_packages(self, distribution, component, architecture, keep_old=None):
     assert architecture in self.__architectures, 'Unknown architecture "%s"' % (architecture)
