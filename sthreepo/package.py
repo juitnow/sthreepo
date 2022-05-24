@@ -45,6 +45,10 @@ class Package(dict):
     return f'{self.name}_{self.version}_{self.architecture}'
 
   @property
+  def filename(self):
+    return self['Filename']
+
+  @property
   def sha256(self):
     return self['SHA256']
 
