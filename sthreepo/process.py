@@ -41,7 +41,7 @@ def process(repository, key_id, bucket,
 
   # Prepare the _base_ files (repository keys)
   files = {
-    'repository.gpg': (key.to_pgp(armoured=False, kms_client=kms_client), 'application/binary'),
+    'repository.gpg': (key.to_pgp(armoured=False, kms_client=kms_client), 'application/pgp-keys'),
     'repository.gpg.asc': (key.to_pgp(armoured=True, kms_client=kms_client), 'text/plain; charset=utf-8'),
   }
 
