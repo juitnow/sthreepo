@@ -132,7 +132,7 @@ def process(repository, key_id, bucket,
   # Now upload...
   for name, (content, content_type) in files.items():
     key = "%s%s" % (prefix, name)
-    if (content):
+    if content != None:
       log.info('Uploading "s3://%s/%s"' % (bucket, key))
       s3_client.put_object(
         Bucket = bucket,
