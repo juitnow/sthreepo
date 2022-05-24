@@ -2,7 +2,7 @@
 # ============
 #
 # This is a copy of [pydpkg](https://github.com/memory/python-dpkg) version
-# 1.6.0 with its `Dsc` module removed.
+# 1.6.0 with its `Dsc` module removed and without "six".
 #
 # We need this as `pydpkg.Dsc` imports `PGPy` which has some native dependencies
 # we don't want to actually have (the idea here is to target a small AWS Lambda
@@ -22,7 +22,6 @@ from email import message_from_string
 from gzip import GzipFile
 
 # pypi imports
-import six
 from arpy import Archive
 
 REQUIRED_HEADERS = ("package", "version", "architecture")
@@ -40,7 +39,7 @@ class Dpkg:
         """
         self.filename = os.path.expanduser(filename)
         self.ignore_missing = ignore_missing
-        if not isinstance(self.filename, six.string_types):
+        if not isinstance(self.filename, str):
             raise DpkgError("filename argument must be a string")
         if not os.path.isfile(self.filename):
             raise DpkgError(f"filename '{filename}' does not exist")
@@ -57,7 +56,7 @@ class Dpkg:
         return repr(self.control_str)
 
     def __str__(self):
-        return six.text_type(self.control_str)
+        return str(self.control_str)
 
     def __getattr__(self, attr):
         """Overload getattr to treat control message headers as object
@@ -233,9 +232,9 @@ class Dpkg:
     @staticmethod
     def _force_encoding(obj, encoding="utf-8"):
         """Enforce uniform text encoding"""
-        if isinstance(obj, six.string_types):
-            if not isinstance(obj, six.text_type):
-                obj = six.text_type(obj, encoding)
+        if isinstance(obj, str):
+            if not isinstance(obj, str):
+                obj = str(obj, encoding)
         return obj
 
     def _extract_message(self, ctar):
