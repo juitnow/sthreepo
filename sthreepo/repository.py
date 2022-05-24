@@ -95,7 +95,7 @@ class Repository(dict):
     assert component in self.__indexes[distribution], 'Unknown component "%s" for distribution "%s"' % (component, distribution)
 
     if not key in self.__indexes[distribution][component]:
-      log.debug('Adding package "%s" to index "%s:%s"' % (key, distribution, component))
+      log.info('Adding package "%s" to index "%s:%s"' % (key, distribution, component))
       self.__indexes[distribution][component].append(key)
 
 
