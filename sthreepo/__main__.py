@@ -1,15 +1,19 @@
 from botocore import session as aws
+from getopt import getopt, GetoptError
 from textwrap import dedent
+from uuid import uuid4
+
+import json
+import logging
 import os
 import sys
-from getopt import getopt, GetoptError
-import logging
-import json
 
-from .repository import Repository
-from .process import process
-from .prettify import prettify
 from .package import Package
+from .prettify import prettify
+from .process import process
+from .repository import Repository
+
+# ==============================================================================
 
 log = logging.getLogger('sthreepo')
 log.setLevel(logging.INFO)
@@ -22,6 +26,7 @@ handler.setFormatter(formatter)
 
 root_log.addHandler(handler)
 
+# ==============================================================================
 
 def __help():
   cmd = os.getenv('PGP_KMS_ARGV0', sys.argv[0])
@@ -43,16 +48,22 @@ def __help():
       -n, --name=<name>     The name of the repository (default: "repository").
       -o, --origin=<origin> Set the origin for the repository.
       -v, --verbose         Be more verbose.
+          --invalidate-cloudfront=<distribution-id>
+                            Invalidate all CloudFront caches for the distribution
+                            with the specified ID.
 
     Environment Variables:
-      STHREEPO_BUCKET       The AWS bucket name of the repository.
-      STHREEPO_KEY          The default ID, ARN or alias of the KMS key to use.
+      STHREEPO_BUCKET         The AWS bucket name of the repository.
+      STHREEPO_KEY            The default ID, ARN or alias of the KMS key to use.
+      STHREEPO_CLOUDFRONT_ID  The CloudFront Distribution ID for invalidating caches.
   '''.format(cmd = cmd)))
 
+# ==============================================================================
 
 if __name__ == '__main__':
   key = os.environ.get('STHREEPO_KEY')
   bucket = os.environ.get('STHREEPO_BUCKET')
+  invalidate = os.environ.get('STHREEPO_CLOUDFRONT_ID')
   name = 'repository'
   label = None
   origin = None
@@ -65,7 +76,7 @@ if __name__ == '__main__':
   try:
     (options, rest) = getopt(sys.argv[1:], 'hb:l:n:o:k:c:d:i:v', [
       'bucket=', 'label=', 'origin=', 'key=', 'create-index=', 'default-index=',
-      'name=', 'index=', 'sha256', 'sha384', 'sha512', 'help', 'verbose'
+      'name=', 'index=', 'invalidate-cloudfront=', 'help', 'verbose'
     ])
 
     for key, value in options:
@@ -89,6 +100,8 @@ if __name__ == '__main__':
         origin = value
       elif key in [ '-v' , '--verbose' ]:
         verbose = True
+      elif key in [ '--invalidate-cloudfront' ]:
+        invalidate = value
 
   except GetoptError as error:
     sys.exit('Error: %s' % (error))
@@ -191,7 +204,20 @@ if __name__ == '__main__':
     ContentType = 'application/json; charset=utf-8',
   )
 
-  # for name, (content, content_type) in files.items():
-  #   filename = './repository/%s' % name
-  #   os.makedirs(os.path.dirname(filename), exist_ok=True)
-  #   with open(filename, "wb") as file: file.write(content)
+  # Invalidate CloudFront
+  if invalidate:
+    log.debug('Creating cache invalidation (id=%s)' % (invalidate))
+    cloudfront_client = session.create_client('cloudfront')
+
+    response = cloudfront_client.create_invalidation(
+      DistributionId = invalidate,
+      InvalidationBatch = {
+        'CallerReference': str(uuid4()),
+        'Paths': {
+          'Quantity': 1,
+          'Items': [ '/*' ],
+        },
+      },
+    )
+
+    log.info('Invalidation %s created' % (response['Invalidation']['Id']))
